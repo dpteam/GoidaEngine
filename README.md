@@ -1,6 +1,6 @@
 <img width="200" src="https://github.com/dpteam/ToxiphobiaEngine/assets/2005369/57c130a9-138a-4917-b449-26697590261c" alt="Toxiphobia" align="right">
 <div align="left">
-<h2>Toxiphobia Engine</h2>
+<h1>Toxiphobia Engine</h1>
 
 <p align="center">
 
