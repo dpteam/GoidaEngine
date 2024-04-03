@@ -2,6 +2,20 @@
 
 IWad
 {
+	Name = "Toxiphobia Game"
+	Autoname = "xyz.dartpower.toxiphobia.game"
+	Game = "Doom"
+	Config = "Doom"
+	IWADName = "ToxiphobiaGame.pk3", 1
+	Mapinfo = "mapinfo/ToxiphobiaGame.txt"
+	Compatibility = "Shorttex"
+	MustContain = "MAP01", "MAP30"
+	BannerColors = "a8 00 00", "a8 a8 a8"
+	IgnoreTitlePatches = 1
+}
+
+IWad
+{
 	Name = "Rise Of The Wool Ball"
 	Autoname = "woolball.rotwb"
 	Game = "Doom"
@@ -591,6 +605,7 @@ IWad
 
 Names
 {
+	"ToxiphobiaGame.pk3"
 	"doom_complete.pk3"
 	"doom2.wad"
 	"doom2f.wad"
@@ -643,6 +658,7 @@ Names
 
 Order	// Order in the IWAD selection box
 {
+	"Toxiphobia"
 	"DOOM: Complete: WadSmoosh"
 	"DOOM 2: Hell on Earth"
 	"DOOM 2: L'Enfer sur Terre"

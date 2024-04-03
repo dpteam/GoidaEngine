@@ -101,7 +101,7 @@ const char *GetVersionString();
 // More stuff that needs to be different for derivatives.
 #define GAMENAME "Toxiphobia"
 #define WGAMENAME L"Toxiphobia"
-#define GAMENAMELOWERCASE "toxiphobia"
+#define GAMENAMELOWERCASE "Toxiphobia" // toxiphobia? No. Toxiphobia!
 #define FORUM_URL "http://forum.zdoom.org/"
 #define BUGS_FORUM_URL	"http://forum.zdoom.org/viewforum.php?f=2"
 
