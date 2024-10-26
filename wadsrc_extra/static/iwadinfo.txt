@@ -2,12 +2,12 @@
 
 IWad
 {
-	Name = "Toxiphobia Game"
-	Autoname = "xyz.dartpower.toxiphobia.game"
+	Name = "Goida Game"
+	Autoname = "xyz.dartpower.goida.game"
 	Game = "Doom"
 	Config = "Doom"
-	IWADName = "ToxiphobiaGame.pk3", 1
-	Mapinfo = "mapinfo/ToxiphobiaGame.txt"
+	IWADName = "GoidaGame.pk3", 1
+	Mapinfo = "mapinfo/GoidaGame.txt"
 	Compatibility = "Shorttex"
 	MustContain = "MAP01", "MAP30"
 	BannerColors = "a8 00 00", "a8 a8 a8"

@@ -1,2 +1,2 @@
-// MAPINFO for Toxiphobia
+// MAPINFO for Goida
 include "mapinfo/doomcommon.txt"

@@ -92,16 +92,16 @@ const char *GetVersionString();
 #define SAVEVER 4558
 
 // This is so that derivates can use the same savegame versions without worrying about engine compatibility
-#define GAMESIG "Toxiphobia"
-#define BASEWAD "Toxiphobia.pk3"
+#define GAMESIG "Goida"
+#define BASEWAD "Goida.pk3"
 #define OPTIONALWAD "game_support.pk3"
 #define GZDOOM 1
 #define VR3D_ENABLED
 
 // More stuff that needs to be different for derivatives.
-#define GAMENAME "Toxiphobia"
-#define WGAMENAME L"Toxiphobia"
-#define GAMENAMELOWERCASE "Toxiphobia" // toxiphobia? No. Toxiphobia!
+#define GAMENAME "Goida"
+#define WGAMENAME L"Goida"
+#define GAMENAMELOWERCASE "goida"
 #define FORUM_URL "http://forum.zdoom.org/"
 #define BUGS_FORUM_URL	"http://forum.zdoom.org/viewforum.php?f=2"
 

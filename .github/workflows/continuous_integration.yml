@@ -101,11 +101,11 @@ jobs:
         cd build
         mkdir package
         if [[ "${{ runner.os }}" == 'Windows' ]]; then
-          cp ${{ matrix.config.build_type }}/Toxiphobia.exe ${{ matrix.config.build_type }}/*.pk3 package
+          cp ${{ matrix.config.build_type }}/Goida.exe ${{ matrix.config.build_type }}/*.pk3 package
         elif [[ "${{ runner.os }}" == 'macOS' ]]; then
-          cp -r Toxiphobia.app package
+          cp -r Goida.app package
         elif [[ "${{ runner.os }}" == 'Linux' ]]; then
-          cp Toxiphobia *.pk3 package
+          cp Goida *.pk3 package
         fi
 
     - name: Upload Package
