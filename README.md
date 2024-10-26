@@ -13,8 +13,6 @@
 
 <img src="https://img.shields.io/github/downloads/dpteam/GoidaEngine/total.svg">
 
-[![Github-CI](https://github.com/dpteam/GoidaEngine/workflows/Continuous%20Integration/badge.svg)](https://github.com/dpteam/GoidaEngine/actions?query=workflow%3A%22Continuous+Integration%22)
-
 </p>
 
 </div>
