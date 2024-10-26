@@ -39,6 +39,7 @@
 #include "vectors.h"
 #include "sc_man.h"
 #include "file_zip.h"
+#include "screenjob.h"
 
 struct level_info_t;
 struct cluster_info_t;
@@ -73,6 +74,7 @@ FSerializer &Serialize(FSerializer &arc, const char *key, acsdefered_t &defer, a
 
 struct FIntermissionDescriptor;
 struct FIntermissionAction;
+struct CutsceneDef;
 
 struct FMapInfoParser
 {
@@ -95,6 +97,8 @@ struct FMapInfoParser
 
 	bool ParseLookupName(FString &dest);
 	void ParseMusic(FString &name, int &order);
+	void ParseCutscene(CutsceneDef& cdef);
+
 	//void ParseLumpOrTextureName(char *name);
 	void ParseLumpOrTextureName(FString &name);
 	void ParseExitText(FName formap, level_info_t *info);
@@ -252,6 +256,15 @@ enum ELevelFlags : unsigned int
 	LEVEL3_HIDEAUTHORNAME		= 0x00000100,
 	LEVEL3_PROPERMONSTERFALLINGDAMAGE	= 0x00000200,	// Properly apply falling damage to the monsters
 	LEVEL3_SKYBOXAO				= 0x00000400,	// Apply SSAO to sector skies
+	LEVEL3_E1M8SPECIAL			= 0x00000800,
+	LEVEL3_E2M8SPECIAL			= 0x00001000,
+	LEVEL3_E3M8SPECIAL			= 0x00002000,
+	LEVEL3_E4M8SPECIAL			= 0x00004000,
+	LEVEL3_E4M6SPECIAL			= 0x00008000,
+	LEVEL3_NOSHADOWMAP			= 0x00010000,	// disables shadowmaps for a given level.
+	LEVEL3_AVOIDMELEE			= 0x00020000,	// global flag needed for proper MBF support.
+	LEVEL3_NOJUMPDOWN			= 0x00040000,	// only for MBF21. Inverse of MBF's dog_jumping flag.
+	LEVEL3_LIGHTCREATED			= 0x00080000,	// a light had been created in the last frame
 };
 
 
@@ -392,6 +405,8 @@ struct level_info_t
 	FString		EDName;
 	FString		acsName;
 	bool		fs_nocheckposition;
+	
+	CutsceneDef intro, outro;
 
 
 	level_info_t() 
@@ -421,6 +436,9 @@ struct cluster_info_t
 	FString		ExitText;
 	FString		EnterText;
 	FString		MessageMusic;
+	CutsceneDef intro;		// plays when entering this cluster, aside from starting a new game
+	CutsceneDef outro;		// plays when leaving this cluster
+	CutsceneDef gameover;	// when defined, plays when the player dies in this cluster
 	int			musicorder;
 	int			flags;
 	int			cdtrack;
@@ -564,6 +582,7 @@ struct FEpisode
 	FString mPicName;
 	char mShortcut;
 	bool mNoSkill;
+	CutsceneDef mIntro;
 };
 
 extern TArray<FEpisode> AllEpisodes;

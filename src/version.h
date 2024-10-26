@@ -41,21 +41,21 @@ const char *GetVersionString();
 
 /** Lots of different version numbers **/
 
-#define VERSIONSTR "4.7pre"
+#define VERSIONSTR "4.8.2"
 
 // The version as seen in the Windows resource
-#define RC_FILEVERSION 4,6,9999,0
-#define RC_PRODUCTVERSION 4,6,9999,0
+#define RC_FILEVERSION 4,8,2,0
+#define RC_PRODUCTVERSION 4,8,2,0
 #define RC_PRODUCTVERSION2 VERSIONSTR
 // These are for content versioning.
 #define VER_MAJOR 4
-#define VER_MINOR 7
-#define VER_REVISION 0
+#define VER_MINOR 8
+#define VER_REVISION 2
 
 // This should always refer to the GZDoom version a derived port is based on and not reflect the derived port's version number!
 #define ENG_MAJOR 4
-#define ENG_MINOR 7
-#define ENG_REVISION 0
+#define ENG_MINOR 8
+#define ENG_REVISION 2
 
 // Version identifier for network games.
 // Bump it every time you do a release unless you're certain you
@@ -65,7 +65,7 @@ const char *GetVersionString();
 // Version stored in the ini's [LastRun] section.
 // Bump it if you made some configuration change that you want to
 // be able to migrate in FGameConfigFile::DoGlobalSetup().
-#define LASTRUNVERSION "222"
+#define LASTRUNVERSION "223"
 
 // Protocol version used in demos.
 // Bump it if you change existing DEM_ commands or add new ones.
@@ -89,11 +89,11 @@ const char *GetVersionString();
 
 // Use 4500 as the base git save version, since it's higher than the
 // SVN revision ever got.
-#define SAVEVER 4558
+#define SAVEVER 4559
 
 // This is so that derivates can use the same savegame versions without worrying about engine compatibility
-#define GAMESIG "Goida"
-#define BASEWAD "Goida.pk3"
+#define GAMESIG "GOIDA"
+#define BASEWAD "goida.pk3"
 #define OPTIONALWAD "game_support.pk3"
 #define GZDOOM 1
 #define VR3D_ENABLED
@@ -110,6 +110,8 @@ const char *GetVersionString();
 #else
 #define GAME_DIR ".config/" GAMENAMELOWERCASE
 #endif
+
+#define DEFAULT_DISCORD_APP_ID "951303644597325885"
 
 const int SAVEPICWIDTH = 216;
 const int SAVEPICHEIGHT = 162;

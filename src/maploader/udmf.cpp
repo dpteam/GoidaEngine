@@ -109,21 +109,22 @@ static inline bool P_IsThingSpecial(int specnum)
 	return (specnum >= Thing_Projectile && specnum <= Thing_SpawnNoFog) ||
 			specnum == Thing_SpawnFacing || specnum == Thing_ProjectileIntercept || specnum == Thing_ProjectileAimed;
 }
-
-enum
+namespace
 {
-	Dm=1,
-	Ht=2,
-	Hx=4,
-	St=8,
-	Zd=16,
-	Zdt=32,
-	Va=64,
+	enum
+	{
+		Dm=1,		// Doom
+		Ht=2,		// Heretic
+		Hx=4,		// Hexen
+		St=8,		// Strife
+		Zd=16,		// ZDoom
+		Zdt=32,		// ZDoom Translated
+		Va=64,		// Vavoom
 
-	// will be extended later. Unknown namespaces will always be treated like the base
-	// namespace for each game
-};
-
+		// will be extended later. Unknown namespaces will always be treated like the base
+		// namespace for each game
+	};
+}
 #define CHECK_N(f) if (!(namespace_bits&(f))) break;
 
 //===========================================================================
@@ -736,21 +737,27 @@ public:
 				break;
 
 			case NAME_ScaleX:
-				th->Scale.X = CheckFloat(key);
+				th->Scale.X = (float)CheckFloat(key);
 				break;
 
 			case NAME_ScaleY:
-				th->Scale.Y = CheckFloat(key);
+				th->Scale.Y = (float)CheckFloat(key);
 				break;
 
 			case NAME_Scale:
-				th->Scale.X = th->Scale.Y = CheckFloat(key);
+				th->Scale.X = th->Scale.Y = (float)CheckFloat(key);
 				break;
 
 			case NAME_FriendlySeeBlocks:
 				CHECK_N(Zd | Zdt)
 				th->friendlyseeblocks = CheckInt(key);
 				break;
+
+			case NAME_lm_suncolor:
+			case NAME_lm_sampledistance:
+			case NAME_lm_gridsize:
+				CHECK_N(Zd | Zdt)
+					break;
 
 			default:
 				CHECK_N(Zd | Zdt)
@@ -926,6 +933,12 @@ public:
 			case NAME_Blockfloaters:
 				CHECK_N(St | Zd | Zdt | Va)
 				Flag(ld->flags, ML_BLOCK_FLOATERS, key); 
+				continue;
+
+			case NAME_Blocklandmonsters:
+				// This is from MBF21 so it may later be needed for a lower level namespace.
+				CHECK_N(St | Zd | Zdt | Va)
+				Flag(ld->flags2, ML2_BLOCKLANDMONSTERS, key);
 				continue;
 
 			case NAME_Translucent:
@@ -1116,6 +1129,16 @@ public:
 				ld->healthgroup = CheckInt(key);
 				break;
 
+			case NAME_lm_lightcolorline:
+			case NAME_lm_lightintensityline:
+			case NAME_lm_lightdistanceline:
+			case NAME_lm_sampledist_line:
+			case NAME_lm_sampledist_top:
+			case NAME_lm_sampledist_mid:
+			case NAME_lm_sampledist_bot:
+				CHECK_N(Zd | Zdt)
+				break;
+
 			default:
 				if (strnicmp("user_", key.GetChars(), 5))
 					DPrintf(DMSG_WARNING, "Unknown UDMF linedef key %s\n", key.GetChars());
@@ -1293,6 +1316,30 @@ public:
 
 			case NAME_lightabsolute:
 				Flag(sd->Flags, WALLF_ABSLIGHTING, key);
+				continue;
+
+			case NAME_light_top:
+				sd->SetLight(CheckInt(key), side_t::top);
+				continue;
+				
+			case NAME_lightabsolute_top:
+				Flag(sd->Flags, WALLF_ABSLIGHTING_TOP, key);
+				continue;
+
+			case NAME_light_mid:
+				sd->SetLight(CheckInt(key), side_t::mid);
+				continue;
+
+			case NAME_lightabsolute_mid:
+				Flag(sd->Flags, WALLF_ABSLIGHTING_MID, key);
+				continue;
+
+			case NAME_light_bottom:
+				sd->SetLight(CheckInt(key), side_t::bottom);
+				continue;
+
+			case NAME_lightabsolute_bottom:
+				Flag(sd->Flags, WALLF_ABSLIGHTING_BOTTOM, key);
 				continue;
 
 			case NAME_lightfog:
@@ -1941,7 +1988,18 @@ public:
 				case NAME_Health3DGroup:
 					sec->health3dgroup = CheckInt(key);
 					break;
-					
+
+				case NAME_lm_lightcolorfloor:
+				case NAME_lm_lightintensityfloor:
+				case NAME_lm_lightdistancefloor:
+				case NAME_lm_lightcolorceiling:
+				case NAME_lm_lightintensityceiling:
+				case NAME_lm_lightdistanceceiling:
+				case NAME_lm_sampledist_floor:
+				case NAME_lm_sampledist_ceiling:
+					CHECK_N(Zd | Zdt)
+					break;
+
 				default:
 					if (strnicmp("user_", key.GetChars(), 5))
 						DPrintf(DMSG_WARNING, "Unknown UDMF sector key %s\n", key.GetChars());

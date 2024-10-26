@@ -40,26 +40,27 @@ class ImageScrollerDescriptor : MenuDescriptor native
 	native Color textBackgroundBrightness;
 	native double textScale;
 	native bool mAnimatedTransition;
+	native bool mAnimated;
 	native int virtWidth, virtHeight;
 }
 
 class ImageScrollerPage : MenuItemBase
 {
 	int virtWidth, virtHeight;
-	
+
 	protected void DrawText(Font fnt, int color, double x, double y, String text)
 	{
 		screen.DrawText(fnt, color, x, y, text, DTA_VirtualWidth, virtWidth, DTA_VirtualHeight, virtHeight, DTA_FullscreenScale, FSMode_ScaleToFit43);
 	}
- 
+
  	protected void DrawTexture(TextureID tex, double x, double y)
 	{
 		screen.DrawTexture(tex, true, x, y, DTA_VirtualWidth, virtWidth, DTA_VirtualHeight, virtHeight, DTA_FullscreenScale, FSMode_ScaleToFit43);
 	}
-	
+
 	virtual void OnStartPage()
 	{}
-	
+
 	virtual void OnEndPage()
 	{}
 }
@@ -73,13 +74,13 @@ class ImageScrollerPage : MenuItemBase
 class ImageScrollerPageImageItem : ImageScrollerPage
 {
 	TextureID mTexture;
-	
+
 	void Init(ImageScrollerDescriptor desc, String patch)
 	{
 		Super.Init();
 		mTexture = TexMan.CheckForTexture(patch);
 	} 
-	
+
 	override void Drawer(bool selected)
 	{
 		Screen.DrawTexture(mTexture, true, 0, 0, DTA_FullscreenEx, FSMode_ScaleToFit43, DTA_LegacyRenderStyle, STYLE_Normal);
@@ -99,7 +100,7 @@ class ImageScrollerPageTextItem : ImageScrollerPage
 	TextureID mTexture;
 	Color mBrightness;
 	double mTextScale;
-	
+
 	void Init(ImageScrollerDescriptor desc, String txt, int y = -1)
 	{
 		Super.Init();
@@ -109,16 +110,16 @@ class ImageScrollerPageTextItem : ImageScrollerPage
 		mTextScale = desc.textScale;
 		virtWidth = desc.virtWidth;
 		virtHeight = desc.virtHeight;
-		
+
 		mText = mFont.BreakLines(Stringtable.Localize(txt.Filter()), int(virtWidth / mTextScale));
 		mYpos = y >= 0? y : virtHeight / 2 - mText.Count() * mFont.GetHeight() * mTextScale / 2;
-		
+
 	} 
-	
+
 	override void Drawer(bool selected)
 	{
 		Screen.DrawTexture(mTexture, true, 0, 0, DTA_FullscreenEx, FSMode_ScaleToFit43, DTA_LegacyRenderStyle, STYLE_Normal, DTA_Color, mBrightness);
-		
+
 		let fontheight = mFont.GetHeight() * mTextScale;
 		let y = mYpos;
 		let c = mText.Count();
@@ -168,6 +169,7 @@ class ImageScrollerMenu : Menu
 		index = 0;
 		mDesc = desc;
 		AnimatedTransition = desc.mAnimatedTransition;
+		Animated = desc.mAnimated;
 		current = mDesc.mItems[0];
 		current.onStartPage();
 		previous = null;
@@ -178,7 +180,7 @@ class ImageScrollerMenu : Menu
 	// 
 	//
 	//=============================================================================
-	
+
 	override bool MenuEvent(int mkey, bool fromcontroller)
 	{
 		if (mDesc.mItems.Size() <= 1)
@@ -226,7 +228,7 @@ class ImageScrollerMenu : Menu
 	// 
 	//
 	//=============================================================================
-	
+
 	override bool MouseEvent(int type, int x, int y)
 	{
 		// Todo: Implement some form of drag event to switch between pages.
@@ -242,7 +244,7 @@ class ImageScrollerMenu : Menu
 	// 
 	//
 	//=============================================================================
-	
+
 	private bool DrawTransition()
 	{
 		double now = MSTime() * (120. / 1000.);
@@ -268,16 +270,17 @@ class ImageScrollerMenu : Menu
 	// 
 	//
 	//=============================================================================
-	
+
 	override void Drawer()
 	{
 		if (previous != null)
 		{
+			bool wasAnimated = Animated;
 			Animated = true;
 			if (DrawTransition()) return;
 			previous = null;
+			Animated = wasAnimated;
 		}
 		current.Drawer(false);
-		Animated = false;
 	}
 }

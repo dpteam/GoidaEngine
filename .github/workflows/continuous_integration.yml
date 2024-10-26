@@ -121,9 +121,9 @@ jobs:
         if [[ "${{ runner.os }}" == 'Windows' ]]; then
           cp ${{ matrix.config.build_type }}/Goida.exe ${{ matrix.config.build_type }}/*.pk3 package
         elif [[ "${{ runner.os }}" == 'macOS' ]]; then
-          cp -r Goida.app package
+          cp -r goida.app package
         elif [[ "${{ runner.os }}" == 'Linux' ]]; then
-          cp Goida *.pk3 package
+          cp goida *.pk3 package
         fi
 
     - name: Upload Package

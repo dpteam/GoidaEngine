@@ -34,7 +34,7 @@
 */
 
 #include <assert.h>
-#include "templates.h"
+
 #include "g_level.h"
 #include "filesystem.h"
 #include "cmdlib.h"
@@ -51,6 +51,7 @@
 #include "g_levellocals.h"
 #include "events.h"
 #include "i_system.h"
+#include "screenjob.h"
 
 static TArray<cluster_info_t> wadclusterinfos;
 TArray<level_info_t> wadlevelinfos;
@@ -744,6 +745,30 @@ void FMapInfoParser::ParseMusic(FString &name, int &order)
 
 //==========================================================================
 //
+//
+//
+//==========================================================================
+
+void FMapInfoParser::ParseCutscene(CutsceneDef& cdef)
+{
+	FString sound;
+	sc.MustGetStringName("{");
+	while (!sc.CheckString("}"))
+	{
+		sc.MustGetString();
+		if (sc.Compare("video")) { ParseAssign(); sc.MustGetString(); cdef.video = sc.String; cdef.function = ""; }
+		else if (sc.Compare("function")) { ParseAssign(); sc.SetCMode(false); sc.MustGetString(); sc.SetCMode(true); cdef.function = sc.String; cdef.video = ""; }
+		else if (sc.Compare("sound")) { ParseAssign(); sc.MustGetString(); cdef.soundName = sc.String; }
+		else if (sc.Compare("soundid")) { ParseAssign(); sc.MustGetNumber(); cdef.soundID = sc.Number; }
+		else if (sc.Compare("fps")) { ParseAssign();  sc.MustGetNumber();  cdef.framespersec = sc.Number; }
+		//else if (sc.Compare("transitiononly")) cdef.transitiononly = true;
+		else if (sc.Compare("delete")) { cdef.function = "none"; cdef.video = ""; } // this means 'play nothing', not 'not defined'.
+		else if (sc.Compare("clear")) cdef = {};
+	}
+}
+
+//==========================================================================
+//
 // ParseCluster
 // Parses a cluster definition
 //
@@ -845,6 +870,18 @@ void FMapInfoParser::ParseCluster()
 		else if (sc.Compare("exittextislump"))
 		{
 			clusterinfo->flags |= CLUSTER_EXITTEXTINLUMP;
+		}
+		else if (sc.Compare("intro"))
+		{
+			ParseCutscene(clusterinfo->intro);
+		}
+		else if (sc.Compare("outro"))
+		{
+			ParseCutscene(clusterinfo->outro);
+		}
+		else if (sc.Compare("gameover"))
+		{
+			ParseCutscene(clusterinfo->gameover);
 		}
 		else if (!ParseCloseBrace())
 		{
@@ -1016,14 +1053,14 @@ DEFINE_MAP_OPTION(fade, true)
 {
 	parse.ParseAssign();
 	parse.sc.MustGetString();
-	info->fadeto = V_GetColor(NULL, parse.sc);
+	info->fadeto = V_GetColor(parse.sc);
 }
 
 DEFINE_MAP_OPTION(outsidefog, true)
 {
 	parse.ParseAssign();
 	parse.sc.MustGetString();
-	info->outsidefog = V_GetColor(NULL, parse.sc);
+	info->outsidefog = V_GetColor(parse.sc);
 }
 
 DEFINE_MAP_OPTION(titlepatch, true)
@@ -1399,14 +1436,14 @@ DEFINE_MAP_OPTION(hazardcolor, true)
 {
 	parse.ParseAssign();
 	parse.sc.MustGetString();
-	info->hazardcolor = V_GetColor(NULL, parse.sc);
+	info->hazardcolor = V_GetColor(parse.sc);
 }
 
 DEFINE_MAP_OPTION(hazardflash, true)
 {
 	parse.ParseAssign();
 	parse.sc.MustGetString();
-	info->hazardflash = V_GetColor(NULL, parse.sc);
+	info->hazardflash = V_GetColor(parse.sc);
 }
 
 DEFINE_MAP_OPTION(fogdensity, false)
@@ -1541,6 +1578,16 @@ DEFINE_MAP_OPTION(loadacs, false)
 	info->acsName = parse.sc.String;
 }
 
+DEFINE_MAP_OPTION(intro, true)
+{
+	parse.ParseCutscene(info->intro);
+}
+
+DEFINE_MAP_OPTION(outro, true)
+{
+	parse.ParseCutscene(info->outro);
+}
+
 
 //==========================================================================
 //
@@ -1584,6 +1631,11 @@ MapFlagHandlers[] =
 	{ "minotaurspecial",				MITYPE_SETFLAG,	LEVEL_MINOTAURSPECIAL, 0 },
 	{ "dsparilspecial",					MITYPE_SETFLAG,	LEVEL_SORCERER2SPECIAL, 0 },
 	{ "ironlichspecial",				MITYPE_SETFLAG,	LEVEL_HEADSPECIAL, 0 },
+	{ "e1m8special",					MITYPE_SETFLAG3,LEVEL3_E1M8SPECIAL, 0 },
+	{ "e2m8special",					MITYPE_SETFLAG3,LEVEL3_E2M8SPECIAL, 0 },
+	{ "e3m8special",					MITYPE_SETFLAG3,LEVEL3_E3M8SPECIAL, 0 },
+	{ "e4m8special",					MITYPE_SETFLAG3,LEVEL3_E4M8SPECIAL, 0 },
+	{ "e4m6special",					MITYPE_SETFLAG3,LEVEL3_E4M6SPECIAL, 0 },
 	{ "specialaction_exitlevel",		MITYPE_SCFLAGS,	0, ~LEVEL_SPECACTIONSMASK },
 	{ "specialaction_opendoor",			MITYPE_SCFLAGS,	LEVEL_SPECOPENDOOR, ~LEVEL_SPECACTIONSMASK },
 	{ "specialaction_lowerfloor",		MITYPE_SCFLAGS,	LEVEL_SPECLOWERFLOOR, ~LEVEL_SPECACTIONSMASK },
@@ -1653,9 +1705,13 @@ MapFlagHandlers[] =
 	{ "nolightfade",					MITYPE_SETFLAG3,	LEVEL3_NOLIGHTFADE, 0 },
 	{ "nocoloredspritelighting",		MITYPE_SETFLAG3,	LEVEL3_NOCOLOREDSPRITELIGHTING, 0 },
 	{ "forceworldpanning",				MITYPE_SETFLAG3,	LEVEL3_FORCEWORLDPANNING, 0 },
-	{ "propermonsterfallingdamage",			MITYPE_SETFLAG3,	LEVEL3_PROPERMONSTERFALLINGDAMAGE, 0 },
-	{ "enableskyboxao",				MITYPE_SETFLAG3,	LEVEL3_SKYBOXAO, 0 },
+	{ "propermonsterfallingdamage",		MITYPE_SETFLAG3,	LEVEL3_PROPERMONSTERFALLINGDAMAGE, 0 },
+	{ "disableshadowmap",				MITYPE_SETFLAG3,	LEVEL3_NOSHADOWMAP, 0 },
+	{ "enableshadowmap",				MITYPE_CLRFLAG3,	LEVEL3_NOSHADOWMAP, 0 },
+	{ "enableskyboxao",					MITYPE_SETFLAG3,	LEVEL3_SKYBOXAO, 0 },
 	{ "disableskyboxao",				MITYPE_CLRFLAG3,	LEVEL3_SKYBOXAO, 0 },
+	{ "avoidmelee",						MITYPE_SETFLAG3,	LEVEL3_AVOIDMELEE, 0 },
+	{ "attenuatelights",				MITYPE_SETFLAG3,	LEVEL3_ATTENUATE, 0 },
 	{ "nobotnodes",						MITYPE_IGNORE,	0, 0 },		// Skulltag option: nobotnodes
 	{ "compat_shorttex",				MITYPE_COMPATFLAG, COMPATF_SHORTTEX, 0 },
 	{ "compat_stairs",					MITYPE_COMPATFLAG, COMPATF_STAIRINDEX, 0 },
@@ -1679,7 +1735,8 @@ MapFlagHandlers[] =
 	{ "compat_minotaur",				MITYPE_COMPATFLAG, COMPATF_MINOTAUR, 0 },
 	{ "compat_mushroom",				MITYPE_COMPATFLAG, COMPATF_MUSHROOM, 0 },
 	{ "compat_mbfmonstermove",			MITYPE_COMPATFLAG, COMPATF_MBFMONSTERMOVE, 0 },
-	{ "compat_corpsegibs",				MITYPE_COMPATFLAG, COMPATF_CORPSEGIBS, 0 },
+	{ "compat_corpsegibs",				MITYPE_COMPATFLAG, 0, 0 },	// this flag no longer exists, but we need it here for old mapinfos.
+	{ "compat_vileghosts",				MITYPE_COMPATFLAG, COMPATF_VILEGHOSTS, 0 },
 	{ "compat_noblockfriends",			MITYPE_COMPATFLAG, COMPATF_NOBLOCKFRIENDS, 0 },
 	{ "compat_spritesort",				MITYPE_COMPATFLAG, COMPATF_SPRITESORT, 0 },
 	{ "compat_light",					MITYPE_COMPATFLAG, COMPATF_LIGHT, 0 },
@@ -1697,6 +1754,9 @@ MapFlagHandlers[] =
 	{ "compat_explode2",				MITYPE_COMPATFLAG, 0, COMPATF2_EXPLODE2 },
 	{ "compat_railing",					MITYPE_COMPATFLAG, 0, COMPATF2_RAILING },
 	{ "compat_scriptwait",				MITYPE_COMPATFLAG, 0, COMPATF2_SCRIPTWAIT },
+	{ "compat_avoidhazards",			MITYPE_COMPATFLAG, 0, COMPATF2_AVOID_HAZARDS },
+	{ "compat_stayonlift",				MITYPE_COMPATFLAG, 0, COMPATF2_STAYONLIFT },
+	{ "compat_nombf21",					MITYPE_COMPATFLAG, 0, COMPATF2_NOMBF21 },
 	{ "cd_start_track",					MITYPE_EATNEXT,	0, 0 },
 	{ "cd_end1_track",					MITYPE_EATNEXT,	0, 0 },
 	{ "cd_end2_track",					MITYPE_EATNEXT,	0, 0 },
@@ -2055,6 +2115,7 @@ void FMapInfoParser::ParseEpisodeInfo ()
 	bool noskill = false;
 	bool optional = false;
 	bool extended = false;
+	CutsceneDef introscene;
 
 	// Get map name
 	sc.MustGetString ();
@@ -2111,6 +2172,11 @@ void FMapInfoParser::ParseEpisodeInfo ()
 		{
 			noskill = true;
 		}
+		else if (sc.Compare("intro"))
+		{
+			ParseCutscene(introscene);
+		}
+
 		else if (!ParseCloseBrace())
 		{
 			// Unknown
@@ -2169,6 +2235,7 @@ void FMapInfoParser::ParseEpisodeInfo ()
 		epi->mPicName = pic;
 		epi->mShortcut = tolower(key);
 		epi->mNoSkill = noskill;
+		epi->mIntro = introscene;
 	}
 }
 

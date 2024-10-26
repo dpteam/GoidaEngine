@@ -56,7 +56,7 @@
 #include "g_level.h"
 #include "d_event.h"
 #include "p_tick.h"
-#include "st_start.h"
+#include "startscreen.h"
 #include "d_main.h"
 #include "i_system.h"
 #include "doommenu.h"
@@ -64,22 +64,26 @@
 #include "gameconfigfile.h"
 #include "d_player.h"
 #include "teaminfo.h"
+#include "i_time.h"
+#include "shiftstate.h"
+#include "hwrenderer/scene/hw_drawinfo.h"
 
 EXTERN_CVAR(Int, cl_gfxlocalization)
 EXTERN_CVAR(Bool, m_quickexit)
 EXTERN_CVAR(Bool, saveloadconfirmation) // [mxd]
 EXTERN_CVAR(Bool, quicksaverotation)
 EXTERN_CVAR(Bool, show_messages)
+EXTERN_CVAR(Float, hud_scalefactor)
 
 CVAR(Bool, m_simpleoptions, false, CVAR_ARCHIVE|CVAR_GLOBALCONFIG)
 
 typedef void(*hfunc)();
 DMenu* CreateMessageBoxMenu(DMenu* parent, const char* message, int messagemode, bool playsound, FName action = NAME_None, hfunc handler = nullptr);
 bool OkForLocalization(FTextureID texnum, const char* substitute);
-void I_WaitVBL(int count);
 
 
 FNewGameStartup NewGameStartupInfo;
+int LastSkill = -1;
 
 
 bool M_SetSpecialMenu(FName& menu, int param)
@@ -146,6 +150,7 @@ bool M_SetSpecialMenu(FName& menu, int param)
 	{
 		// sent from the skill menu for a skill that needs to be confirmed
 		NewGameStartupInfo.Skill = param;
+		LastSkill = param;
 
 		const char *msg = AllSkills[param].MustConfirmText;
 		if (*msg==0) msg = GStrings("NIGHTMARE");
@@ -156,6 +161,7 @@ bool M_SetSpecialMenu(FName& menu, int param)
 	case NAME_Startgame:
 		// sent either from skill menu or confirmation screen. Skill gets only set if sent from skill menu
 		// Now we can finally start the game. Ugh...
+		LastSkill = param;
 		NewGameStartupInfo.Skill = param;
 		[[fallthrough]];
 	case NAME_StartgameConfirmed:
@@ -201,6 +207,10 @@ bool M_SetSpecialMenu(FName& menu, int param)
 		menu = NAME_Optionsmenu;
 		break;
 
+	case NAME_Readthismenu:
+		// [MK] allow us to override the ReadThisMenu class
+		menu = gameinfo.HelpMenuClass;
+		break;
 	}
 
 	DMenuDescriptor** desc = MenuDescriptors.CheckKey(menu);
@@ -295,6 +305,7 @@ CCMD (menu_quit)
 {	// F10
 	if (m_quickexit)
 	{
+		CleanSWDrawer();
 		ST_Endoom();
 	}
 
@@ -326,6 +337,7 @@ CCMD (menu_quit)
 				I_WaitVBL(105);
 			}
 		}
+		CleanSWDrawer();
 		ST_Endoom();
 	});
 
@@ -496,14 +508,28 @@ EXTERN_CVAR (Int, screenblocks)
 
 CCMD (sizedown)
 {
-	screenblocks = screenblocks - 1;
+	if (shiftState.ShiftPressed())
+	{
+		hud_scalefactor = hud_scalefactor - 0.04f;
+	}
+	else
+	{
+		screenblocks = screenblocks - 1;
+	}
 	S_Sound (CHAN_VOICE, CHANF_UI, "menu/change", snd_menuvolume, ATTN_NONE);
 }
 
 CCMD (sizeup)
 {
-	screenblocks = screenblocks + 1;
-	S_Sound (CHAN_VOICE, CHANF_UI, "menu/change", snd_menuvolume, ATTN_NONE);
+	if (shiftState.ShiftPressed())
+	{
+		hud_scalefactor = hud_scalefactor + 0.04f;
+	}
+	else
+	{
+		screenblocks = screenblocks + 1;
+	}
+	S_Sound(CHAN_VOICE, CHANF_UI, "menu/change", snd_menuvolume, ATTN_NONE);
 }
 
 CCMD(reset2defaults)
@@ -570,8 +596,21 @@ void M_StartupEpisodeMenu(FNewGameStartup *gs)
 				if (y < topy) topy = y;
 			}
 
+			int spacing = ld->mLinespacing;
+			for (unsigned i = 0; i < AllEpisodes.Size(); i++)
+			{
+				if (AllEpisodes[i].mPicName.IsNotEmpty())
+				{
+					FTextureID tex = GetMenuTexture(AllEpisodes[i].mPicName);
+					if (AllEpisodes[i].mEpisodeName.IsEmpty() || OkForLocalization(tex, AllEpisodes[i].mEpisodeName))
+						continue;
+				}
+				if ((gameinfo.gametype & GAME_DoomStrifeChex) && spacing == 16) spacing = 18;
+				break;
+			}
+
 			// center the menu on the screen if the top space is larger than the bottom space
-			int totalheight = posy + AllEpisodes.Size() * ld->mLinespacing - topy;
+			int totalheight = posy + AllEpisodes.Size() * spacing - topy;
 
 			if (totalheight < 190 || AllEpisodes.Size() == 1)
 			{
@@ -602,7 +641,7 @@ void M_StartupEpisodeMenu(FNewGameStartup *gs)
 					if (*c == '$') c = GStrings(c + 1);
 					int textwidth = ld->mFont->StringWidth(c);
 					int textright = posx + textwidth;
-					if (posx + textright > 320) posx = std::max(0, 320 - textright);
+					if (posx + textright > 320) posx = max(0, 320 - textright);
 				}
 
 				for(unsigned i = 0; i < AllEpisodes.Size(); i++)
@@ -612,15 +651,15 @@ void M_StartupEpisodeMenu(FNewGameStartup *gs)
 					{
 						FTextureID tex = GetMenuTexture(AllEpisodes[i].mPicName);
 						if (AllEpisodes[i].mEpisodeName.IsEmpty() || OkForLocalization(tex, AllEpisodes[i].mEpisodeName))
-							it = CreateListMenuItemPatch(posx, posy, ld->mLinespacing, AllEpisodes[i].mShortcut, tex, NAME_Skillmenu, i);
+							it = CreateListMenuItemPatch(posx, posy, spacing, AllEpisodes[i].mShortcut, tex, NAME_Skillmenu, i);
 					}
 					if (it == nullptr)
 					{
-						it = CreateListMenuItemText(posx, posy, ld->mLinespacing, AllEpisodes[i].mShortcut, 
+						it = CreateListMenuItemText(posx, posy, spacing, AllEpisodes[i].mShortcut, 
 							AllEpisodes[i].mEpisodeName, ld->mFont, ld->mFontColor, ld->mFontColor2, NAME_Skillmenu, i);
 					}
 					ld->mItems.Push(it);
-					posy += ld->mLinespacing;
+					posy += spacing;
 				}
 				if (AllEpisodes.Size() == 1)
 				{
@@ -1030,7 +1069,7 @@ void M_StartupSkillMenu(FNewGameStartup *gs)
 	}
 	if (MenuSkills.Size() == 0) I_Error("No valid skills for menu found. At least one must be defined.");
 
-	int defskill = DefaultSkill;
+	int defskill = LastSkill > -1? LastSkill : DefaultSkill; // use the last selected skill, if available.
 	if ((unsigned int)defskill >= MenuSkills.Size())
 	{
 		defskill = SkillIndices[(MenuSkills.Size() - 1) / 2];
@@ -1072,9 +1111,10 @@ void M_StartupSkillMenu(FNewGameStartup *gs)
 				}
 			}
 
-			if (done != restart)
+			int spacing = ld->mLinespacing;
+			//if (done != restart)
 			{
-				done = restart;
+				//done = restart;
 				ld->mSelectedItem = ld->mItems.Size() + defindex;
 
 				int posy = y;
@@ -1087,8 +1127,20 @@ void M_StartupSkillMenu(FNewGameStartup *gs)
 					if (y < topy) topy = y;
 				}
 
+				for (unsigned i = 0; i < MenuSkills.Size(); i++)
+				{
+					if (MenuSkills[i]->PicName.IsNotEmpty())
+					{
+						FTextureID tex = GetMenuTexture(MenuSkills[i]->PicName);
+						if (MenuSkills[i]->MenuName.IsEmpty() || OkForLocalization(tex, MenuSkills[i]->MenuName))
+							continue;
+					}
+					if ((gameinfo.gametype & GAME_DoomStrifeChex) && spacing == 16) spacing = 18;
+					break;
+				}
+
 				// center the menu on the screen if the top space is larger than the bottom space
-				int totalheight = posy + MenuSkills.Size() * ld->mLinespacing - topy;
+				int totalheight = posy + MenuSkills.Size() * spacing - topy;
 
 				if (totalheight < 190 || MenuSkills.Size() == 1)
 				{
@@ -1133,7 +1185,7 @@ void M_StartupSkillMenu(FNewGameStartup *gs)
 				if (*c == '$') c = GStrings(c + 1);
 				int textwidth = ld->mFont->StringWidth(c);
 				int textright = posx + textwidth;
-				if (posx + textright > 320) posx = std::max(0, 320 - textright);
+				if (posx + textright > 320) posx = max(0, 320 - textright);
 			}
 
 			unsigned firstitem = ld->mItems.Size();
@@ -1156,16 +1208,16 @@ void M_StartupSkillMenu(FNewGameStartup *gs)
 				{
 					FTextureID tex = GetMenuTexture(skill.PicName);
 					if (skill.MenuName.IsEmpty() || OkForLocalization(tex, skill.MenuName))
-						li = CreateListMenuItemPatch(posx, y, ld->mLinespacing, skill.Shortcut, tex, action, SkillIndices[i]);
+						li = CreateListMenuItemPatch(posx, y, spacing, skill.Shortcut, tex, action, SkillIndices[i]);
 				}
 				if (li == nullptr)
 				{
-					li = CreateListMenuItemText(posx, y, ld->mLinespacing, skill.Shortcut,
+					li = CreateListMenuItemText(posx, y, spacing, skill.Shortcut,
 									pItemText? *pItemText : skill.MenuName, ld->mFont, color,ld->mFontColor2, action, SkillIndices[i]);
 				}
 				ld->mItems.Push(li);
 				GC::WriteBarrier(*desc, li);
-				y += ld->mLinespacing;
+				y += spacing;
 			}
 			if (AllEpisodes[gs->Episode].mNoSkill || MenuSkills.Size() == 1)
 			{
@@ -1273,7 +1325,17 @@ void SetDefaultMenuColors()
 	OptionSettings.mFontColorHighlight = V_FindFontColor(gameinfo.mFontColorHighlight);
 	OptionSettings.mFontColorSelection = V_FindFontColor(gameinfo.mFontColorSelection);
 
-	auto cls = PClass::FindClass("DoomMenuDelegate");
+	auto cls = PClass::FindClass(gameinfo.HelpMenuClass);
+	if (!cls)
+		I_FatalError("%s: Undefined help menu class", gameinfo.HelpMenuClass.GetChars());
+	if (!cls->IsDescendantOf(RUNTIME_CLASS(DMenu)))
+		I_FatalError("'%s' does not inherit from Menu", gameinfo.HelpMenuClass.GetChars());
+
+	cls = PClass::FindClass(gameinfo.MenuDelegateClass);
+	if (!cls)
+		I_FatalError("%s: Undefined menu delegate class", gameinfo.MenuDelegateClass.GetChars());
+	if (!cls->IsDescendantOf("MenuDelegateBase"))
+		I_FatalError("'%s' does not inherit from MenuDelegateBase", gameinfo.MenuDelegateClass.GetChars());
 	menuDelegate = cls->CreateNew();
 }
 

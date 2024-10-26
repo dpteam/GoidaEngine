@@ -45,14 +45,13 @@
 #include "c_dispatch.h"
 #include "sc_man.h"
 #include "v_text.h"
-#include "st_start.h"
 #include "doomstat.h"
 #include "v_palette.h"
 #include "colormatcher.h"
 #include "r_data/colormaps.h"
 #include "r_swcolormaps.h"
 #include "v_video.h"
-#include "templates.h"
+
 #include "r_utility.h"
 #include "swrenderer/r_renderer.h"
 #include <atomic>
@@ -516,11 +515,11 @@ CCMD (testfade)
 	{
 		if ( !(colorstring = V_GetColorStringByName (argv[1])).IsEmpty() )
 		{
-			color = V_GetColorFromString (NULL, colorstring);
+			color = V_GetColorFromString (colorstring);
 		}
 		else
 		{
-			color = V_GetColorFromString (NULL, argv[1]);
+			color = V_GetColorFromString (argv[1]);
 		}
 		for (auto Level : AllLevels())
 		{
@@ -550,11 +549,11 @@ CCMD (testcolor)
 	{
 		if ( !(colorstring = V_GetColorStringByName (argv[1])).IsEmpty() )
 		{
-			color = V_GetColorFromString (NULL, colorstring);
+			color = V_GetColorFromString (colorstring);
 		}
 		else
 		{
-			color = V_GetColorFromString (NULL, argv[1]);
+			color = V_GetColorFromString (argv[1]);
 		}
 		if (argv.argc() > 2)
 		{

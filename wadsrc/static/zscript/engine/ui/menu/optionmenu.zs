@@ -66,7 +66,7 @@ class OptionMenuDescriptor : MenuDescriptor native
 		mIndent = 0;
 		mDontDim = 0;
 	}
-	
+
 	//=============================================================================
 	//
 	//
@@ -137,7 +137,7 @@ class OptionMenu : Menu
 		linespacing = ui_classic? OptionMenuSettings.mOldLinespacing : OptionMenuSettings.mLinespacing;
 	}
 
-	
+
 	//=============================================================================
 	//
 	//
@@ -153,7 +153,7 @@ class OptionMenu : Menu
 		}
 		return NULL;
 	}
-	
+
 
 	//=============================================================================
 	//
@@ -197,13 +197,37 @@ class OptionMenu : Menu
 					mDesc.mScrollPos += 2;
 					VisBottom += 2;
 				}
-				else
+				else if (VisBottom < mDesc.mItems.Size()-1)
 				{
 					mDesc.mScrollPos++;
 					VisBottom++;
 				}
 			}
 			return true;
+		}
+		else if (ev.type == UIEvent.Type_Char)
+		{
+			int key = String.CharLower(ev.keyChar);
+			int itemsNumber = mDesc.mItems.Size();
+			int direction = ev.IsAlt ? -1 : 1;
+			for (int i = 0; i < itemsNumber; ++i)
+			{
+				int index = (mDesc.mSelectedItem + direction * (i + 1) + itemsNumber) % itemsNumber;
+				if (!mDesc.mItems[index].Selectable()) continue;
+				String label = StringTable.Localize(mDesc.mItems[index].mLabel);
+				int firstLabelCharacter = String.CharLower(label.GetNextCodePoint(0));
+				if (firstLabelCharacter == key)
+				{
+					mDesc.mSelectedItem = index;
+					break;
+				}
+			}
+			if (mDesc.mSelectedItem <= mDesc.mScrollTop + mDesc.mScrollPos
+				|| mDesc.mSelectedItem > VisBottom)
+			{
+				int pagesize = VisBottom - mDesc.mScrollPos - mDesc.mScrollTop;
+				mDesc.mScrollPos = clamp(mDesc.mSelectedItem - mDesc.mScrollTop - 1, 0, mDesc.mItems.size() - pagesize - 1);
+			}
 		}
 		return Super.OnUIEvent(ev);
 	}
@@ -266,7 +290,7 @@ class OptionMenu : Menu
 			do
 			{
 				++mDesc.mSelectedItem;
-				
+
 				if (CanScrollDown && mDesc.mSelectedItem >= VisBottom)
 				{
 					mDesc.mScrollPos++;
@@ -362,7 +386,7 @@ class OptionMenu : Menu
 		return true;
 	}
 
-	
+
 	//=============================================================================
 	//
 	//
@@ -399,7 +423,7 @@ class OptionMenu : Menu
 		return Super.MouseEvent(type, x, y);
 	}
 
-	
+
 	//=============================================================================
 	//
 	//
@@ -414,7 +438,7 @@ class OptionMenu : Menu
 			mDesc.mItems[i].Ticker();
 		}
 	}
-	
+
 	//=============================================================================
 	//
 	//
@@ -535,12 +559,12 @@ class OptionMenu : Menu
 	{
 		mFocusControl = OptionMenuItem(fc);
 	}
-	
+
 	override bool CheckFocus(MenuItemBase fc)
 	{
 		return mFocusControl == fc;
 	}
-	
+
 	override void ReleaseFocus()
 	{
 		mFocusControl = NULL;

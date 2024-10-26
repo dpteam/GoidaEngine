@@ -38,7 +38,7 @@ class TextEnterMenu : Menu
 {
 	const INPUTGRID_WIDTH = 13;
 	const INPUTGRID_HEIGHT = 5;
-	
+
 	const Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+-=.,!?@'\":;[]()<>^#$%&*/_ \b";
 
 	String mEnterString;
@@ -50,7 +50,7 @@ class TextEnterMenu : Menu
 	int CursorSize;
 	bool AllowColors;
 	Font displayFont;
-	
+
 	//=============================================================================
 	//
 	//
@@ -106,13 +106,13 @@ class TextEnterMenu : Menu
 	{
 		return mEnterString;
 	}
-	
+
 	override bool TranslateKeyboardEvents()
 	{
 		return mInputGridOkay; 
 	}
-	
-	
+
+
 	//=============================================================================
 	//
 	//
@@ -303,7 +303,7 @@ class TextEnterMenu : Menu
 		return false;
 	}
 
-	
+
 	//=============================================================================
 	//
 	//
@@ -365,7 +365,7 @@ class TextEnterMenu : Menu
 					else if (ch == 8 || ch == 0)
 					{
 						// Draw the backspace and end "characters".
-						String str = ch == 8 ? "BS" : "ED";
+						String str = ch == 8 ? "←" : "↲";
 						screen.DrawText(displayFont, colr,
 							xx + cell_width/2 - displayFont.StringWidth(str)*CleanXfac_1/2,
 							yy + top_padding, str, DTA_CleanNoMove_1, true);
@@ -375,5 +375,5 @@ class TextEnterMenu : Menu
 		}
 		Super.Drawer();
 	}
-	
+
 }

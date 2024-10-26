@@ -2,20 +2,6 @@
 
 IWad
 {
-	Name = "Goida Game"
-	Autoname = "xyz.dartpower.goida.game"
-	Game = "Doom"
-	Config = "Doom"
-	IWADName = "GoidaGame.pk3", 1
-	Mapinfo = "mapinfo/GoidaGame.txt"
-	Compatibility = "Shorttex"
-	MustContain = "MAP01", "MAP30"
-	BannerColors = "a8 00 00", "a8 a8 a8"
-	IgnoreTitlePatches = 1
-}
-
-IWad
-{
 	Name = "Rise Of The Wool Ball"
 	Autoname = "woolball.rotwb"
 	Game = "Doom"
@@ -516,6 +502,22 @@ IWad
 
 IWad
 {
+	Name = "Sigil II"
+	BannerColors = "FF 00 00", "40 40 40"
+	MustContain = "M_EPI6", "SKY6", "D_E6M1", "D_E6M9", "E6M1", "E6M9", "ZMAPINFO", "E6TEXT"
+	Load = "SIGIL_II_MP3_V1_0.WAD"
+	Required = "The Ultimate DOOM"
+	Autoname = "doom.id.doom1.sigil2"
+	Game = "Doom"
+	Config = "Doom"
+	IWADName = "SIGIL_II_V1_0.WAD"
+	Mapinfo = "mapinfo/ultdoom.txt"
+	Compatibility = "Shorttex"
+	IgnoreTitlePatches = 1
+}
+
+IWad
+{
 	Name = "DOOM 2: BFG Edition"
 	Autoname = "doom.id.doom2.bfg"
 	Game = "Doom"
@@ -605,7 +607,6 @@ IWad
 
 Names
 {
-	"ToxiphobiaGame.pk3"
 	"doom_complete.pk3"
 	"doom2.wad"
 	"doom2f.wad"
@@ -653,12 +654,12 @@ Names
 	"delaweare.wad"
 	"rotwb.wad"
 	"sigil_v1_21.wad"
+	"SIGIL_II_V1_0.WAD"
 	"nerve.wad"
 }
 
 Order	// Order in the IWAD selection box
 {
-	"Goida"
 	"DOOM: Complete: WadSmoosh"
 	"DOOM 2: Hell on Earth"
 	"DOOM 2: L'Enfer sur Terre"
@@ -667,6 +668,7 @@ Order	// Order in the IWAD selection box
 	"Final Doom: TNT - Evilution"
 	"The Ultimate DOOM"
 	"Sigil of Baphomet"
+	"Sigil II"
 	"DOOM Registered"
 	"DOOM Shareware"
 	"DOOM 2: BFG Edition"

@@ -1,4 +1,5 @@
 
+
 layout(location = 0) in vec4 vTexCoord;
 layout(location = 1) in vec4 vColor;
 layout(location = 2) in vec4 pixelpos;
@@ -6,6 +7,7 @@ layout(location = 3) in vec3 glowdist;
 layout(location = 4) in vec3 gradientdist;
 layout(location = 5) in vec4 vWorldNormal;
 layout(location = 6) in vec4 vEyeNormal;
+layout(location = 9) in vec3 vLightmap;
 
 #ifdef NO_CLIPDISTANCE_SUPPORT
 layout(location = 7) in vec4 ClipDistanceA;
@@ -44,6 +46,7 @@ vec2 GetTexCoord();
 const int TEXF_Brightmap = 0x10000;
 const int TEXF_Detailmap = 0x20000;
 const int TEXF_Glowmap = 0x40000;
+const int TEXF_ClampY = 0x80000;
 
 //===========================================================================
 //
@@ -201,6 +204,14 @@ vec4 getTexel(vec2 st)
 			return texel;
 
 	}
+
+	if ((uTextureMode & TEXF_ClampY) != 0)
+	{
+		if (st.t < 0.0 || st.t > 1.0)
+		{
+			texel.a = 0.0;
+		}
+	}
 	
 	// Apply the texture modification colors.
 	int blendflags = int(uTextureAddColor.a);	// this alpha is unused otherwise
@@ -330,10 +341,34 @@ float R_DoomLightingEquation(float light)
 
 //===========================================================================
 //
-// Check if light is in shadow according to its 1D shadow map
+// Check if light is in shadow
 //
 //===========================================================================
 
+#ifdef SUPPORTS_RAYTRACING
+
+float shadowAttenuation(vec4 lightpos, float lightcolorA)
+{
+	vec3 origin = pixelpos.xyz;
+	vec3 direction = normalize(lightpos.xyz - pixelpos.xyz);
+	float lightDistance = distance(pixelpos.xyz, lightpos.xyz);
+
+	rayQueryEXT rayQuery;
+	rayQueryInitializeEXT(rayQuery, TopLevelAS, gl_RayFlagsTerminateOnFirstHitEXT, 0xFF, origin, 0.01f, direction, lightDistance);
+
+	while(rayQueryProceedEXT(rayQuery))
+	{
+	}
+
+	if (rayQueryGetIntersectionTypeEXT(rayQuery, true) != gl_RayQueryCommittedIntersectionNoneEXT)
+	{
+		return 0.0;
+	}
+
+	return 1.0;
+}
+
+#else
 #ifdef SUPPORTS_SHADOWMAPS
 
 float shadowDirToU(vec2 dir)
@@ -478,6 +513,7 @@ float shadowAttenuation(vec4 lightpos, float lightcolorA)
 }
 
 #endif
+#endif
 
 float spotLightAttenuation(vec4 lightpos, vec3 spotdir, float lightCosInnerAngle, float lightCosOuterAngle)
 {
@@ -564,16 +600,16 @@ void SetMaterialProps(inout Material material, vec2 texCoord)
 // OpenGL doesn't care, but Vulkan pukes all over the place if these texture samplings are included in no-texture shaders, even though never called.
 #ifndef NO_LAYERS
 	if ((uTextureMode & TEXF_Brightmap) != 0)
-		material.Bright = texture(brighttexture, texCoord.st);
+		material.Bright = desaturate(texture(brighttexture, texCoord.st));
 		
 	if ((uTextureMode & TEXF_Detailmap) != 0)
 	{
 		vec4 Detail = texture(detailtexture, texCoord.st * uDetailParms.xy) * uDetailParms.z;
-		material.Base *= Detail;
+		material.Base.rgb *= Detail.rgb;
 	}
 	
 	if ((uTextureMode & TEXF_Glowmap) != 0)
-		material.Glow = texture(glowtexture, texCoord.st);
+		material.Glow = desaturate(texture(glowtexture, texCoord.st));
 #endif
 }
 
@@ -628,7 +664,7 @@ vec4 getLightColor(Material material, float fogdist, float fogfactor)
 	color = min(color, 1.0);
 
 	// these cannot be safely applied by the legacy format where the implementation cannot guarantee that the values are set.
-#ifndef LEGACY_USER_SHADER
+#if !defined LEGACY_USER_SHADER && !defined NO_LAYERS
 	//
 	// apply glow 
 	//
@@ -644,6 +680,14 @@ vec4 getLightColor(Material material, float fogdist, float fogfactor)
 	// apply other light manipulation by custom shaders, default is a NOP.
 	//
 	color = ProcessLight(material, color);
+
+	//
+	// apply lightmaps
+	//
+	if (vLightmap.z >= 0.0)
+	{
+		color.rgb += texture(LightMap, vLightmap).rgb;
+	}
 
 	//
 	// apply dynamic lights

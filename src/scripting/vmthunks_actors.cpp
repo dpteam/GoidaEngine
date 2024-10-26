@@ -59,6 +59,7 @@
 DVector2 AM_GetPosition();
 int Net_GetLatency(int *ld, int *ad);
 void PrintPickupMessage(bool localview, const FString &str);
+bool P_CheckForResurrection(AActor* self, bool usevilestates, FState* state = nullptr, FSoundID sound = 0);
 
 // FCheckPosition requires explicit construction and destruction when used in the VM
 
@@ -197,6 +198,28 @@ DEFINE_ACTION_FUNCTION_NATIVE(AActor, A_StartSound, A_StartSound)
 	return 0;
 }
 
+
+void A_StartSoundIfNotSame(AActor *self, int soundid, int checksoundid, int channel, int flags, double volume, double attenuation, double pitch, double startTime)
+{
+	if (!S_AreSoundsEquivalent (self, soundid, checksoundid))
+		A_StartSound(self, soundid, channel, flags, volume, attenuation, pitch, startTime);
+}
+
+DEFINE_ACTION_FUNCTION_NATIVE(AActor, A_StartSoundIfNotSame, A_StartSoundIfNotSame)
+{
+	PARAM_SELF_PROLOGUE(AActor);
+	PARAM_SOUND(soundid);
+	PARAM_SOUND(checksoundid);
+	PARAM_INT(channel);
+	PARAM_INT(flags);
+	PARAM_FLOAT(volume);
+	PARAM_FLOAT(attenuation);
+	PARAM_FLOAT(pitch);
+	PARAM_FLOAT(startTime);
+	A_StartSoundIfNotSame(self, soundid, checksoundid, channel, flags, volume, attenuation, pitch, startTime);
+	return 0;
+}
+
 DEFINE_ACTION_FUNCTION_NATIVE(AActor, IsActorPlayingSound, S_IsActorPlayingSomething)
 {
 	PARAM_SELF_PROLOGUE(AActor);
@@ -327,6 +350,18 @@ DEFINE_ACTION_FUNCTION_NATIVE(AActor, SetDamage, SetDamage)
 	self->SetDamage(dmg);
 	return 0;
 }
+
+static double PitchFromVel(AActor* self)
+{
+	return self->Vel.Pitch().Degrees;
+}
+
+DEFINE_ACTION_FUNCTION_NATIVE(AActor, PitchFromVel, PitchFromVel)
+{
+	PARAM_SELF_PROLOGUE(AActor);
+	ACTION_RETURN_FLOAT(PitchFromVel(self));
+}
+
 
 // This combines all 3 variations of the internal function
 static void VelFromAngle(AActor *self, double speed, double angle)
@@ -1115,6 +1150,7 @@ DEFINE_ACTION_FUNCTION_NATIVE(AActor, CheckMove, CheckMove)
 
 static double AimLineAttack(AActor *self, double angle, double distance, FTranslatedLineTarget *pLineTarget, double vrange, int flags, AActor *target, AActor *friender)
 {
+	flags &= ~ALF_IGNORENOAUTOAIM; // just to be safe. This flag is not supposed to be accesible to scripting.
 	return P_AimLineAttack(self, angle, distance, pLineTarget, vrange, flags, target, friender).Degrees;
 }
 
@@ -1373,7 +1409,8 @@ DEFINE_ACTION_FUNCTION_NATIVE(AActor, RoughMonsterSearch, P_RoughMonsterSearch)
 	PARAM_INT(distance);
 	PARAM_BOOL(onlyseekable);
 	PARAM_BOOL(frontonly);
-	ACTION_RETURN_OBJECT(P_RoughMonsterSearch(self, distance, onlyseekable, frontonly));
+	PARAM_FLOAT(fov);
+	ACTION_RETURN_OBJECT(P_RoughMonsterSearch(self, distance, onlyseekable, frontonly, fov));
 }
 
 DEFINE_ACTION_FUNCTION_NATIVE(AActor, CheckSight, P_CheckSight)
@@ -1429,10 +1466,10 @@ DEFINE_ACTION_FUNCTION_NATIVE(AActor, HitFriend, P_HitFriend)
 	ACTION_RETURN_BOOL(P_HitFriend(self));
 }
 
-DEFINE_ACTION_FUNCTION_NATIVE(AActor, MonsterMove, P_Move)
+DEFINE_ACTION_FUNCTION_NATIVE(AActor, MonsterMove, P_SmartMove)
 {
 	PARAM_SELF_PROLOGUE(AActor);
-	ACTION_RETURN_BOOL(P_Move(self));
+	ACTION_RETURN_BOOL(P_SmartMove(self));
 }
 
 DEFINE_ACTION_FUNCTION_NATIVE(AActor, NewChaseDir, P_NewChaseDir)
@@ -1576,15 +1613,17 @@ DEFINE_ACTION_FUNCTION_NATIVE(AActor, A_ExtChase, A_ExtChase)
 	return 0;
 }
 
-int CheckForResurrection(AActor *self)
+int CheckForResurrection(AActor *self, FState* state, int sound)
 {
-	return P_CheckForResurrection(self, false);
+	return P_CheckForResurrection(self, false, state, sound);
 }
 
 DEFINE_ACTION_FUNCTION_NATIVE(AActor, A_CheckForResurrection, CheckForResurrection)
 {
 	PARAM_SELF_PROLOGUE(AActor);
-	ACTION_RETURN_BOOL(P_CheckForResurrection(self, false));
+	PARAM_STATE(state);
+	PARAM_INT(sound);
+	ACTION_RETURN_BOOL(P_CheckForResurrection(self, false, state, sound));
 }
 
 static void ZS_Face(AActor *self, AActor *faceto, double max_turn, double max_pitch, double ang_offset, double pitch_offset, int flags, double z_add)
@@ -1754,7 +1793,6 @@ DEFINE_ACTION_FUNCTION_NATIVE(AActor, isFrozen, isFrozen)
 	ACTION_RETURN_BOOL(isFrozen(self));
 }
 
-
 //===========================================================================
 //
 // PlayerPawn functions
@@ -1780,7 +1818,31 @@ DEFINE_ACTION_FUNCTION_NATIVE(APlayerPawn, GetPrintableDisplayName, GetPrintable
 	ACTION_RETURN_STRING(type->GetDisplayName());
 }
 
+static void SetViewPos(AActor *self, double x, double y, double z, int flags)
+{
+	if (!self->ViewPos)
+	{
+		self->ViewPos = Create<DViewPosition>();
+	}
 
+	DVector3 pos = { x,y,z };
+	self->ViewPos->Set(pos, flags);
+}
+
+DEFINE_ACTION_FUNCTION_NATIVE(AActor, SetViewPos, SetViewPos)
+{
+	PARAM_SELF_PROLOGUE(AActor);
+	PARAM_FLOAT(x);
+	PARAM_FLOAT(y);
+	PARAM_FLOAT(z);
+	PARAM_INT(flags);
+	SetViewPos(self, x, y, z, flags);
+	return 0;
+}
+
+IMPLEMENT_CLASS(DViewPosition, false, false);
+DEFINE_FIELD_X(ViewPosition, DViewPosition, Offset)
+DEFINE_FIELD_X(ViewPosition, DViewPosition, Flags)
 
 DEFINE_FIELD(DThinker, Level)
 DEFINE_FIELD(AActor, snext)
@@ -1790,6 +1852,7 @@ DEFINE_FIELD_NAMED(AActor, __Pos.X, x)
 DEFINE_FIELD_NAMED(AActor, __Pos.Y, y)
 DEFINE_FIELD_NAMED(AActor, __Pos.Z, z)
 DEFINE_FIELD(AActor, SpriteOffset)
+DEFINE_FIELD(AActor, WorldOffset)
 DEFINE_FIELD(AActor, Prev)
 DEFINE_FIELD(AActor, SpriteAngle)
 DEFINE_FIELD(AActor, SpriteRotation)
@@ -1868,6 +1931,7 @@ DEFINE_FIELD(AActor, special)
 DEFINE_FIELD(AActor, tid)
 DEFINE_FIELD(AActor, TIDtoHate)
 DEFINE_FIELD(AActor, waterlevel)
+DEFINE_FIELD(AActor, waterdepth)
 DEFINE_FIELD(AActor, Score)
 DEFINE_FIELD(AActor, accuracy)
 DEFINE_FIELD(AActor, stamina)
@@ -1959,9 +2023,11 @@ DEFINE_FIELD(AActor, friendlyseeblocks)
 DEFINE_FIELD(AActor, SpawnTime)
 DEFINE_FIELD(AActor, InventoryID)
 DEFINE_FIELD(AActor, ThruBits)
+DEFINE_FIELD(AActor, ViewPos)
 DEFINE_FIELD_NAMED(AActor, ViewAngles.Yaw, viewangle)
 DEFINE_FIELD_NAMED(AActor, ViewAngles.Pitch, viewpitch)
 DEFINE_FIELD_NAMED(AActor, ViewAngles.Roll, viewroll)
+DEFINE_FIELD(AActor, LightLevel)
 
 DEFINE_FIELD_X(FCheckPosition, FCheckPosition, thing);
 DEFINE_FIELD_X(FCheckPosition, FCheckPosition, pos);

@@ -73,6 +73,8 @@ EXTERN_CVAR(Float, m_sensitivity_y)
 EXTERN_CVAR(Int, adl_volume_model)
 EXTERN_CVAR (Int, gl_texture_hqresize_targets)
 EXTERN_CVAR(Int, wipetype)
+EXTERN_CVAR(Bool, i_pauseinbackground)
+EXTERN_CVAR(Bool, i_soundinbackground)
 
 #ifdef _WIN32
 EXTERN_CVAR(Int, in_mouse)
@@ -115,6 +117,7 @@ FGameConfigFile::FGameConfigFile ()
 		SetValueForKey ("Path", "$PROGDIR", true);
 #else
 		SetValueForKey ("Path", "$HOME/" GAME_DIR, true);
+		SetValueForKey ("Path", "$HOME/.local/share/games/doom", true);
 		// Arch Linux likes them in /usr/share/doom
 		// Debian likes them in /usr/share/games/doom
 		// I assume other distributions don't do anything radically different
@@ -138,6 +141,7 @@ FGameConfigFile::FGameConfigFile ()
 		SetValueForKey ("Path", "$PROGDIR", true);
 #else
 		SetValueForKey ("Path", "$HOME/" GAME_DIR, true);
+		SetValueForKey ("Path", "$HOME/.local/share/games/doom", true);
 		SetValueForKey ("Path", SHARE_DIR, true);
 		SetValueForKey ("Path", "/usr/local/share/doom", true);
 		SetValueForKey ("Path", "/usr/local/share/games/doom", true);
@@ -166,6 +170,8 @@ FGameConfigFile::FGameConfigFile ()
 #else
 		SetValueForKey("Path", "$HOME/" GAME_DIR "/soundfonts", true);
 		SetValueForKey("Path", "$HOME/" GAME_DIR "/fm_banks", true);
+		SetValueForKey("Path", "$HOME/.local/share/games/doom/soundfonts", true);
+		SetValueForKey("Path", "$HOME/.local/share/games/doom/fm_banks", true);
 		SetValueForKey("Path", "/usr/local/share/doom/soundfonts", true);
 		SetValueForKey("Path", "/usr/local/share/doom/fm_banks", true);
 		SetValueForKey("Path", "/usr/local/share/games/doom/soundfonts", true);
@@ -251,7 +257,7 @@ void FGameConfigFile::DoAutoloadSetup (FIWadManager *iwad_man)
 			{
 				FString section = workname + ".Autoload";
 				CreateSectionAtStart(section.GetChars());
-				long dotpos = workname.LastIndexOf('.');
+				auto dotpos = workname.LastIndexOf('.');
 				if (dotpos < 0) break;
 				workname.Truncate(dotpos);
 			}
@@ -571,6 +577,11 @@ void FGameConfigFile::DoGlobalSetup ()
 					v.Float /= 4.f;
 					if (v.Float < 1.f) v.Float = 1.f;
 				}
+			}
+			if (last < 223)
+			{
+				// ooooh boy did i open a can of worms with this one.
+				i_pauseinbackground = !(i_soundinbackground);
 			}
 		}
 	}
