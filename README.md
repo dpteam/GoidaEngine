@@ -1,6 +1,5 @@
-<img width="200" src="https://raw.githubusercontent.com/dpteam/GoidaEngine/refs/heads/master/icon.png" alt="Goida" align="right">
 <div align="left">
-<h1>Goida Engine</h1>
+<img src="https://raw.githubusercontent.com/dpteam/GoidaEngine/refs/heads/master/logo.png" alt="Goida" align="center">
 
 <p align="center">
 
