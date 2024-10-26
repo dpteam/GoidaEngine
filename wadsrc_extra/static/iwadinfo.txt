@@ -658,7 +658,7 @@ Names
 
 Order	// Order in the IWAD selection box
 {
-	"Toxiphobia"
+	"Goida"
 	"DOOM: Complete: WadSmoosh"
 	"DOOM 2: Hell on Earth"
 	"DOOM 2: L'Enfer sur Terre"
