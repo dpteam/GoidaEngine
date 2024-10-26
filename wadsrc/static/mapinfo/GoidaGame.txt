@@ -1,0 +1,2 @@
+// MAPINFO for Goida
+include "mapinfo/doomcommon.txt"
